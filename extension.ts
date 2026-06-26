@@ -2,39 +2,46 @@
  * pi-code-map-extension — protocol-only entry point.
  *
  * Registers the code_map node on the protocol fabric so callers can
- * invoke provides (build_floor_plan, get_side_effects, trace_call_flow,
- * get_function_callers, get_function_callees, get_entry_points)
- * through the shared protocol gateway instead of individual Pi tools.
+ * invoke provides through the shared protocol gateway.
  *
- * @kyvernitria/pi-protocol-minimal is an optional peer dep — if unavailable
- * the extension loads silently without protocol registration.
+ * Bootstraps @kyvernitria/pi-protocol-minimal if not already available,
+ * installing it into ~/.pi/agent/node_modules/ so ALL future extensions
+ * find it without duplication.
  */
 
 import { createRequire } from "node:module";
-import { readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, symlinkSync } from "node:fs";
+import { homedir } from "node:os";
+import { join } from "node:path";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
 const _require = createRequire(import.meta.url);
 
-export default function codeMapExtension(pi: ExtensionAPI) {
-  registerProtocolIfAvailable();
+function ensureProtocolMinimal(): void {
+  try {
+    _require.resolve("@kyvernitria/pi-protocol-minimal");
+  } catch {
+    const targetDir = join(homedir(), ".pi", "agent", "node_modules", "@kyvernitria");
+    const source = join(homedir(), "Applications", "pi", "pi-protocol", "packages", "pi-protocol-minimal");
+    if (existsSync(source)) {
+      mkdirSync(targetDir, { recursive: true });
+      symlinkSync(source, join(targetDir, "pi-protocol-minimal"), "dir");
+    } else {
+      const { execSync } = _require("node:child_process");
+      mkdirSync(targetDir, { recursive: true });
+      execSync("npm install @kyvernitria/pi-protocol-minimal", { cwd: join(homedir(), ".pi", "agent"), stdio: "pipe" });
+    }
+  }
 }
 
-function registerProtocolIfAvailable(): void {
-  let protocolMinimal: typeof import("@kyvernitria/pi-protocol-minimal");
-  try {
-    protocolMinimal = _require("@kyvernitria/pi-protocol-minimal");
-  } catch {
-    // @kyvernitria/pi-protocol-minimal not installed — skip protocol registration.
-    return;
-  }
+export default function codeMapExtension(pi: ExtensionAPI) {
+  ensureProtocolMinimal();
 
-  const manifest = JSON.parse(
-    readFileSync(new URL("./pi.protocol.json", import.meta.url), "utf8"),
-  );
+  const { ensureProtocolFabric, registerProtocolManifest } = _require("@kyvernitria/pi-protocol-minimal");
+  const manifest = JSON.parse(readFileSync(new URL("./pi.protocol.json", import.meta.url), "utf8"));
   const { handlers } = _require("./protocol/handlers.js");
 
-  const fabric = protocolMinimal.ensureProtocolFabric();
+  const fabric = ensureProtocolFabric();
   fabric.unregister("code_map");
-  protocolMinimal.registerProtocolManifest(fabric, { manifest, handlers });
+  registerProtocolManifest(fabric, { manifest, handlers });
 }
