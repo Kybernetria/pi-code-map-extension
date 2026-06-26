@@ -1,0 +1,150 @@
+{
+  "protocolVersion": "0.2.0",
+  "nodeId": "code_map",
+  "packageId": "pi-code-map-extension",
+  "version": "0.1.0",
+  "purpose": "Read-only TypeScript call graph, side-effect tagging, and call-flow tracing for codebases.",
+  "tags": ["code-map", "call-graph", "static-analysis", "read-only"],
+  "provides": [
+    {
+      "name": "build_floor_plan",
+      "description": "Build or rebuild a read-only TypeScript call graph / code map for the current project.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "root_dir": { "type": "string", "description": "Project root to scan. Defaults to current working directory." },
+          "include_dirs": { "type": "array", "items": { "type": "string" }, "description": "Directories to scan relative to root_dir. Auto-detected when omitted." },
+          "rebuild": { "type": "boolean", "description": "Force rebuild instead of using the in-memory cache." }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "summary": { "type": "string" },
+          "meta": { "type": "object" },
+          "entryPointCount": { "type": "number" }
+        }
+      },
+      "execution": { "type": "handler", "handler": "build_floor_plan" },
+      "effects": ["file_read"],
+      "tags": ["read-only"]
+    },
+    {
+      "name": "get_side_effects",
+      "description": "List functions with side effects such as file writes, DB writes, LLM calls, process execution, and network access.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "root_dir": { "type": "string", "description": "Project root to scan." },
+          "include_dirs": { "type": "array", "items": { "type": "string" } },
+          "type": { "type": "string", "description": "Side-effect type filter." },
+          "min_risk": { "type": "string", "enum": ["low", "medium", "high", "critical"], "description": "Minimum risk level." },
+          "limit": { "type": "number", "description": "Maximum functions to return.", "default": 50 }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "text": { "type": "string" },
+          "nodes": { "type": "array", "items": { "type": "object" } }
+        }
+      },
+      "execution": { "type": "handler", "handler": "get_side_effects" },
+      "effects": ["file_read"],
+      "tags": ["read-only"]
+    },
+    {
+      "name": "trace_call_flow",
+      "description": "Trace shortest/relevant call paths between two function IDs or names.",
+      "inputSchema": {
+        "type": "object",
+        "required": ["from", "to"],
+        "properties": {
+          "root_dir": { "type": "string", "description": "Project root to scan." },
+          "include_dirs": { "type": "array", "items": { "type": "string" } },
+          "from": { "type": "string", "description": "Starting function ID or name." },
+          "to": { "type": "string", "description": "Target function ID or name." },
+          "max_depth": { "type": "number", "description": "Maximum call depth to search.", "default": 10 },
+          "max_paths": { "type": "number", "description": "Maximum paths to return.", "default": 5 }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "text": { "type": "string" },
+          "trace": { "type": "object" }
+        }
+      },
+      "execution": { "type": "handler", "handler": "trace_call_flow" },
+      "effects": ["file_read"],
+      "tags": ["read-only"]
+    },
+    {
+      "name": "get_function_callers",
+      "description": "List direct callers of a function ID or name.",
+      "inputSchema": {
+        "type": "object",
+        "required": ["function"],
+        "properties": {
+          "root_dir": { "type": "string", "description": "Project root to scan." },
+          "include_dirs": { "type": "array", "items": { "type": "string" } },
+          "function": { "type": "string", "description": "Function ID or name." }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "text": { "type": "string" },
+          "nodes": { "type": "array", "items": { "type": "object" } }
+        }
+      },
+      "execution": { "type": "handler", "handler": "get_function_callers" },
+      "effects": ["file_read"],
+      "tags": ["read-only"]
+    },
+    {
+      "name": "get_function_callees",
+      "description": "List direct callees of a function ID or name.",
+      "inputSchema": {
+        "type": "object",
+        "required": ["function"],
+        "properties": {
+          "root_dir": { "type": "string", "description": "Project root to scan." },
+          "include_dirs": { "type": "array", "items": { "type": "string" } },
+          "function": { "type": "string", "description": "Function ID or name." }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "text": { "type": "string" },
+          "nodes": { "type": "array", "items": { "type": "object" } }
+        }
+      },
+      "execution": { "type": "handler", "handler": "get_function_callees" },
+      "effects": ["file_read"],
+      "tags": ["read-only"]
+    },
+    {
+      "name": "get_entry_points",
+      "description": "List detected external entry points such as Pi tools, commands, and event handlers.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "root_dir": { "type": "string", "description": "Project root to scan." },
+          "include_dirs": { "type": "array", "items": { "type": "string" } }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "text": { "type": "string" },
+          "entryPoints": { "type": "array", "items": { "type": "object" } }
+        }
+      },
+      "execution": { "type": "handler", "handler": "get_entry_points" },
+      "effects": ["file_read"],
+      "tags": ["read-only"]
+    }
+  ]
+}

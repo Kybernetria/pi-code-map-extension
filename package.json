@@ -1,0 +1,54 @@
+{
+  "name": "pi-code-map-extension",
+  "version": "0.2.0",
+  "type": "module",
+  "description": "Pi extension + pi-protocol node that builds TypeScript call maps, traces flows, and finds risky side effects.",
+  "keywords": [
+    "pi-package",
+    "pi-extension",
+    "pi-protocol",
+    "code-map",
+    "call-graph"
+  ],
+  "main": "./extension.ts",
+  "exports": {
+    ".": "./extension.ts",
+    "./protocol": "./protocol/index.ts",
+    "./protocol/handlers": "./protocol/handlers.ts"
+  },
+  "pi": {
+    "extensions": [
+      "./extension.ts"
+    ]
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@kyvernitria/pi-protocol-minimal": "file:../../pi-protocol/packages/pi-protocol-minimal",
+    "ts-morph": "^26.0.0"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-ai": "*",
+    "@earendil-works/pi-coding-agent": "*",
+    "typebox": "*"
+  },
+  "peerDependenciesMeta": {
+    "@earendil-works/pi-ai": {
+      "optional": true
+    },
+    "@earendil-works/pi-coding-agent": {
+      "optional": true
+    },
+    "typebox": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typebox": "^1.0.0",
+    "typescript": "^5.8.0",
+    "vitest": "^3.0.0"
+  }
+}
