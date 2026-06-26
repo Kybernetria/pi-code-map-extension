@@ -2,11 +2,12 @@
  * pi-code-map-extension — protocol-only entry point.
  *
  * Registers the code_map node on the protocol fabric so callers can
- * invoke provides through the shared protocol gateway.
+ * invoke provides through the shared protocol gateway instead of
+ * individual Pi tools.
  *
- * Bootstraps @kyvernitria/pi-protocol-minimal if not already available,
- * installing it into ~/.pi/agent/node_modules/ so ALL future extensions
- * find it without duplication.
+ * Bootstrap ensures @kyvernitria/pi-protocol-minimal is available for ALL
+ * pi-protocol certified extensions by installing into the shared
+ * ~/.pi/agent/node_modules/@kyvernitria/ location on first load.
  */
 
 import { createRequire } from "node:module";
@@ -22,22 +23,28 @@ function ensureProtocolMinimal(): void {
     _require.resolve("@kyvernitria/pi-protocol-minimal");
   } catch {
     const targetDir = join(homedir(), ".pi", "agent", "node_modules", "@kyvernitria");
-    const source = join(homedir(), "Applications", "pi", "pi-protocol", "packages", "pi-protocol-minimal");
-    if (existsSync(source)) {
+    const target = join(targetDir, "pi-protocol-minimal");
+
+    const localRepo = join(homedir(), "Applications", "pi", "pi-protocol", "packages", "pi-protocol-minimal");
+    if (existsSync(localRepo)) {
       mkdirSync(targetDir, { recursive: true });
-      symlinkSync(source, join(targetDir, "pi-protocol-minimal"), "dir");
-    } else {
-      const { execSync } = _require("node:child_process");
-      mkdirSync(targetDir, { recursive: true });
-      execSync("npm install @kyvernitria/pi-protocol-minimal", { cwd: join(homedir(), ".pi", "agent"), stdio: "pipe" });
+      symlinkSync(localRepo, target, "dir");
+      return;
     }
+
+    const { execSync } = _require("node:child_process");
+    mkdirSync(targetDir, { recursive: true });
+    execSync("npm install @kyvernitria/pi-protocol-minimal@latest", {
+      cwd: join(homedir(), ".pi", "agent"),
+      stdio: "pipe",
+    });
   }
 }
 
 export default function codeMapExtension(pi: ExtensionAPI) {
   ensureProtocolMinimal();
-
   const { ensureProtocolFabric, registerProtocolManifest } = _require("@kyvernitria/pi-protocol-minimal");
+
   const manifest = JSON.parse(readFileSync(new URL("./pi.protocol.json", import.meta.url), "utf8"));
   const { handlers } = _require("./protocol/handlers.js");
 
