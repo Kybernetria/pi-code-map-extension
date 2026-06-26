@@ -15,6 +15,7 @@ import { existsSync, mkdirSync, readFileSync, symlinkSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { handlers } from "./protocol/handlers.js";
 
 const _require = createRequire(import.meta.url);
 
@@ -46,7 +47,6 @@ export default function codeMapExtension(pi: ExtensionAPI) {
   const { ensureProtocolFabric, registerProtocolManifest } = _require("@kyvernitria/pi-protocol-minimal");
 
   const manifest = JSON.parse(readFileSync(new URL("./pi.protocol.json", import.meta.url), "utf8"));
-  const { handlers } = _require("./protocol/handlers.js");
 
   const fabric = ensureProtocolFabric();
   fabric.unregister("code_map");
