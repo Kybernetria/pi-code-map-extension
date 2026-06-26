@@ -18,10 +18,11 @@ const _require = createRequire(import.meta.url);
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 function ensureProtocolMinimal(): void {
-  try { _require.resolve("@kyvernitria/pi-protocol-minimal"); return; } catch {}
-
   const targetDir = join(__dirname, "node_modules", "@kyvernitria");
   const target = join(targetDir, "pi-protocol-minimal");
+
+  // If the symlink or install already exists, we're done.
+  if (existsSync(target)) return;
 
   const localRepo = join(homedir(), "Applications", "pi", "pi-protocol", "packages", "pi-protocol-minimal");
   if (existsSync(localRepo)) {
@@ -33,15 +34,4 @@ function ensureProtocolMinimal(): void {
   const { execSync } = _require("node:child_process");
   mkdirSync(targetDir, { recursive: true });
   execSync("npm install @kyvernitria/pi-protocol-minimal@latest", { cwd: __dirname, stdio: "pipe" });
-}
-
-export default function codeMapExtension(pi: ExtensionAPI) {
-  ensureProtocolMinimal();
-  const { ensureProtocolFabric, registerProtocolManifest } = _require("@kyvernitria/pi-protocol-minimal");
-
-  const manifest = JSON.parse(readFileSync(new URL("./pi.protocol.json", import.meta.url), "utf8"));
-
-  const fabric = ensureProtocolFabric();
-  fabric.unregister("code_map");
-  registerProtocolManifest(fabric, { manifest, handlers });
 }
