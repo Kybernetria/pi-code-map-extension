@@ -1,19 +1,13 @@
 /**
  * Protocol handler implementations for pi-code-map-extension.
  *
- * The handlers adapt plain pi-protocol JSON input/output to the same query
- * functions used by the Pi extension tools. This keeps the protocol surface
- * and tool surface behavior in lockstep.
+ * Uses lazy dynamic imports for heavy dependencies (ts-morph via floor_plan_manager)
+ * so the extension loads without error even when node_modules are not installed.
+ * Dependencies are only resolved when a provide is actually invoked.
  */
 
-import {
-  buildFloorPlan,
-  getEntryPoints as queryEntryPoints,
-  getFunctionCallees as queryFunctionCallees,
-  getFunctionCallers as queryFunctionCallers,
-  getSideEffects as querySideEffects,
-  traceCallFlow as queryTraceCallFlow,
-} from "../src/extension/queries.js";
+type ProtocolHandler = (input: unknown) => unknown | Promise<unknown>;
+
 import type {
   BuildFloorPlanParams,
   FloorPlanToolOptions,
@@ -36,6 +30,7 @@ function normalizeResult(result: ToolResult): Record<string, unknown> {
 }
 
 export async function buildFloorPlanHandler(input: BuildFloorPlanParams): Promise<Record<string, unknown>> {
+  const { buildFloorPlan } = await import("../src/extension/queries.js");
   const result = await buildFloorPlan(input, defaultContext());
   return {
     summary: textFrom(result),
@@ -44,26 +39,31 @@ export async function buildFloorPlanHandler(input: BuildFloorPlanParams): Promis
 }
 
 export async function getSideEffectsHandler(input: GetSideEffectsParams): Promise<Record<string, unknown>> {
-  return normalizeResult(await querySideEffects(input, defaultContext()));
+  const { getSideEffects } = await import("../src/extension/queries.js");
+  return normalizeResult(await getSideEffects(input, defaultContext()));
 }
 
 export async function traceCallFlowHandler(input: TraceCallFlowParams): Promise<Record<string, unknown>> {
-  return normalizeResult(await queryTraceCallFlow(input, defaultContext()));
+  const { traceCallFlow } = await import("../src/extension/queries.js");
+  return normalizeResult(await traceCallFlow(input, defaultContext()));
 }
 
 export async function getFunctionCallersHandler(input: FunctionLookupParams): Promise<Record<string, unknown>> {
-  return normalizeResult(await queryFunctionCallers(input, defaultContext()));
+  const { getFunctionCallers } = await import("../src/extension/queries.js");
+  return normalizeResult(await getFunctionCallers(input, defaultContext()));
 }
 
 export async function getFunctionCalleesHandler(input: FunctionLookupParams): Promise<Record<string, unknown>> {
-  return normalizeResult(await queryFunctionCallees(input, defaultContext()));
+  const { getFunctionCallees } = await import("../src/extension/queries.js");
+  return normalizeResult(await getFunctionCallees(input, defaultContext()));
 }
 
 export async function getEntryPointsHandler(input: FloorPlanToolOptions): Promise<Record<string, unknown>> {
-  return normalizeResult(await queryEntryPoints(input, defaultContext()));
+  const { getEntryPoints } = await import("../src/extension/queries.js");
+  return normalizeResult(await getEntryPoints(input, defaultContext()));
 }
 
-export const handlers = {
+export const handlers: Record<string, ProtocolHandler> = {
   build_floor_plan: buildFloorPlanHandler,
   get_side_effects: getSideEffectsHandler,
   trace_call_flow: traceCallFlowHandler,
